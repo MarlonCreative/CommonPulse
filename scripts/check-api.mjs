@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+const origin='http://localhost:5173';
+const status=await fetch(`${origin}/api/astra`);
+assert.equal(status.status,200);
+assert.equal((await status.json()).configured,false);
+const noKey=await fetch(`${origin}/api/astra`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'search',query:'music',context:''})});
+assert.equal(noKey.status,401);
+assert.match((await noKey.json()).error,/API key/);
+const badOrigin=await fetch(`${origin}/api/astra`,{method:'POST',headers:{Origin:'https://elsewhere.example','Content-Type':'application/json'},body:'{}'});
+assert.equal(badOrigin.status,403);
+const invalid=await fetch(`${origin}/api/astra`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer invalid-test-token-not-real'},body:JSON.stringify({action:'not-an-action'})});
+assert.equal(invalid.status,422);
+const noAudio=await fetch(`${origin}/api/transcribe`,{method:'POST',headers:{Authorization:'Bearer invalid-test-token-not-real'},body:new FormData()});
+assert.equal(noAudio.status,400);
+console.log('PASS: configuration status, missing key, cross-origin rejection, invalid action, and missing audio. No OpenAI requests were made.');
